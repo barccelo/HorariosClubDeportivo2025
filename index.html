@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Horarios Club Deportivo — LL. RR. 2025‑2026</title>
+  <style>
+    :root{--bg:#0b0b0c;--panel:#131317;--muted:#8f95a3;--edge:#24262e;--brand:#e91b2c}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b0b0c,#151518 42%,#101013);color:#e7e9ee}
+    .wrap{max-width:1100px;margin:auto;padding:24px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .badge{background:var(--brand);color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;letter-spacing:.3px}
+    h1{font-size:clamp(20px,2.2vw,28px);margin:0;line-height:1.2}
+    .sub{color:var(--muted);font-size:.95rem}
+
+    .panel{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:14px}
+    .filters{display:grid;grid-template-columns:1fr;gap:12px}
+    label{display:block;font-size:.8rem;color:var(--muted);margin:6px 2px}
+    input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--edge);background:#0f1014;color:#e7e9ee}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+    .chip{border:1px solid var(--edge);padding:6px 10px;border-radius:999px;font-size:.85rem;color:#d6dae3;background:#0e0f12;cursor:pointer}
+    .chip.active{background:var(--brand);border-color:transparent;color:white}
+
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+
+    .card{background:#0e0f13;border:1px solid var(--edge);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+    .card h3{margin:0;font-size:1.05rem}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;color:#c9ced8;font-size:.9rem}
+    .pill{background:#10121a;border:1px solid var(--edge);border-radius:999px;padding:4px 8px}
+    .list{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{background:var(--brand);border:1px solid var(--brand);border-radius:10px;padding:5px 8px;font-size:.85rem;color:#fff;cursor:pointer}
+    .empty{opacity:.75;text-align:center;padding:28px}
+    .hint{color:#b5bac7;font-size:.9rem;margin-top:4px}
+    .footer{margin:24px 4px;color:#9aa2b3}
+    .btn{appearance:none;border:1px solid var(--edge);background:#0f1116;color:#e7e9ee;border-radius:12px;padding:10px 12px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="badge">LL. RR. · 2025 - 2026</div>
+        <div>
+          <h1>Horarios · Club Deportivo</h1>
+          <div class="sub">Usa la <strong>búsqueda</strong> o los <strong>chips</strong> de disciplina, grado/año y día.</div>
+        </div>
+      </div>
+      <button class="btn" id="reset">Reiniciar filtros</button>
+    </header>
+
+    <section class="panel">
+      <div class="filters">
+        <div>
+          <label for="text">Búsqueda rápida</label>
+          <input id="text" placeholder="Escribe: ajedrez, 3er, futsal…"/>
+        </div>
+      </div>
+      <div class="chips" id="quick"></div>
+      <div class="chips" id="quickGrades"></div>
+      <div class="chips" id="quickDays"></div>
+    </section>
+
+    <section id="results" class="grid" aria-live="polite"></section>
+    <div id="empty" class="empty" hidden>Sin coincidencias con los filtros actuales.</div>
+
+    <div class="footer">
+      <div class="hint">Sugerencia: haz clic en una disciplina, un grado o un día para filtrar al instante.</div>
+    </div>
+  </div>
+
+<script>
+// ===== Utiles =====
+const normal = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const D = (dia, grado, disciplinas, categoria) => ({day: dia, grade: grado, disciplines: disciplinas, type: categoria||'Deportes'});
+const DAY_ORDER = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const GRADE_ORDER = ["1er Grado","2do Grado","3er Grado","4to Grado","5to Grado","6to Grado","1er Año","2do Año","3er Año","4to Año","5to Año"];
+
+function getTodayName(){
+  const dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  return dias[new Date().getDay()];
+}
+
+// ===== Datos (consolidados de las láminas) =====
+const DATA = [
+  // --- Primaria: 1º–3º ---
+  D('Lunes','1er Grado',["Béisbol","Atletismo","Robótica","Iniciación musical"]),
+  D('Lunes','2do Grado',["Béisbol","Atletismo","Robótica","Iniciación musical"]),
+  D('Lunes','3er Grado',["Baloncesto","Ajedrez","Tenis","Música"]),
+  D('Martes','1er Grado',["Baloncesto","Ajedrez"]),
+  D('Martes','2do Grado',["Baloncesto","Ajedrez","Astronomía"]),
+  D('Martes','3er Grado',["Atletismo","Fútbol campo","Tenis","Futsal","Robótica","Roblegaita"]),
+  D('Miércoles','1er Grado',["Ajedrez","Robótica","Futsal"]),
+  D('Miércoles','2do Grado',["Ajedrez","Robótica","Futsal"]),
+  D('Miércoles','3er Grado',["Béisbol","Fútbol campo","Tenis","Música","Astronomía"]),
+  D('Jueves','1er Grado',["Fútbol campo"]),
+  D('Jueves','2do Grado',["Fútbol campo"]),
+  D('Jueves','3er Grado',["Atletismo","Béisbol","Ajedrez","Futsal","Robótica","Música"]),
+  D('Viernes','1er Grado',["Tenis","Atletismo"]),
+  D('Viernes','2do Grado',["Tenis","Atletismo"]),
+  D('Viernes','3er Grado',["Baloncesto","Béisbol","Astronomía"]),
+  D('Sábado','1er Grado',["Encuentros deportivos"]),
+  D('Sábado','2do Grado',["Encuentros deportivos"]),
+  D('Sábado','3er Grado',["Encuentros deportivos"]),
+
+  // --- Primaria: 4º–6º ---
+  D('Lunes','4to Grado',["Baloncesto","Ajedrez","Tenis","Música"]),
+  D('Lunes','5to Grado',["Ajedrez","Tenis","Futsal","Música"]),
+  D('Lunes','6to Grado',["Ajedrez","Tenis","Futsal","Música"]),
+  D('Martes','4to Grado',["Atletismo","Fútbol campo","Tenis","Futsal","Robótica","Roblegaita"]),
+  D('Martes','5to Grado',["Atletismo","Fútbol campo","Tenis","Futsal","Robótica","Roblegaita"]),
+  D('Martes','6to Grado',["Atletismo","Fútbol campo","Tenis","Futsal","Robótica","Roblegaita"]),
+  D('Miércoles','4to Grado',["Béisbol","Fútbol campo","Tenis","Futsal","Música","Astronomía"]),
+  D('Miércoles','5to Grado',["Béisbol","Fútbol campo","Tenis","Música","Astronomía"]),
+  D('Miércoles','6to Grado',["Béisbol","Fútbol campo","Tenis","Música","Astronomía"]),
+  D('Jueves','4to Grado',["Atletismo","Béisbol","Ajedrez","Futsal","Robótica","Música"]),
+  D('Jueves','5to Grado',["Baloncesto","Atletismo","Béisbol","Ajedrez","Robótica","Música"]),
+  D('Jueves','6to Grado',["Baloncesto","Atletismo","Béisbol","Ajedrez","Robótica","Música"]),
+  D('Viernes','4to Grado',["Baloncesto","Béisbol","Astronomía"]),
+  D('Viernes','5to Grado',["Baloncesto","Béisbol","Astronomía"]),
+  D('Viernes','6to Grado',["Baloncesto","Béisbol","Astronomía"]),
+  D('Sábado','4to Grado',["Encuentros deportivos"]),
+  D('Sábado','5to Grado',["Encuentros deportivos"]),
+  D('Sábado','6to Grado',["Encuentros deportivos"]),
+
+  // --- Media General: 1º–3º año ---
+  D('Lunes','1er Año',["Fútbol campo","Astronomía"]),
+  D('Lunes','2do Año',["Fútbol campo","Astronomía"]),
+  D('Lunes','3er Año',["Fútbol campo"]),
+  D('Martes','1er Año',["Béisbol","Roblegaita"]),
+  D('Martes','2do Año',["Béisbol","Roblegaita"]),
+  D('Martes','3er Año',["Béisbol","Roblegaita"]),
+  D('Miércoles','1er Año',["Baloncesto","Atletismo","Música"]),
+  D('Miércoles','2do Año',["Baloncesto","Atletismo","Música"]),
+  D('Miércoles','3er Año',["Baloncesto","Atletismo","Música"]),
+  D('Jueves','1er Año',["Tenis"]),
+  D('Jueves','2do Año',["Tenis"]),
+  D('Jueves','3er Año',["Tenis"]),
+  D('Viernes','1er Año',["Ajedrez","Futsal","Robótica","Música"]),
+  D('Viernes','2do Año',["Ajedrez","Futsal","Robótica","Música"]),
+  D('Viernes','3er Año',["Ajedrez","Futsal","Robótica","Música"]),
+  D('Sábado','1er Año',["Encuentros deportivos"]),
+  D('Sábado','2do Año',["Encuentros deportivos"]),
+  D('Sábado','3er Año',["Encuentros deportivos"]),
+
+  // --- Media General: 4º–5º año ---
+  D('Lunes','4to Año',["Fútbol campo","Astronomía"]),
+  D('Lunes','5to Año',["Fútbol campo","Astronomía"]),
+  D('Martes','4to Año',["Béisbol","Roblegaita"]),
+  D('Martes','5to Año',["Béisbol","Roblegaita"]),
+  D('Miércoles','4to Año',["Baloncesto","Música","Atletismo"]),
+  D('Miércoles','5to Año',["Baloncesto","Música","Atletismo"]),
+  D('Jueves','4to Año',["Tenis"]),
+  D('Jueves','5to Año',["Tenis"]),
+  D('Viernes','4to Año',["Ajedrez","Futsal","Robótica","Música"]),
+  D('Viernes','5to Año',["Ajedrez","Futsal","Robótica","Música"]),
+  D('Sábado','4to Año',["Encuentros deportivos"]),
+  D('Sábado','5to Año',["Encuentros deportivos"]),
+
+  // --- Club de Música ---
+  D('Lunes','1er Grado',["Iniciación musical","Guitarra","Cuatro"],'Música'),
+  D('Lunes','2do Grado',["Iniciación musical","Guitarra","Cuatro"],'Música'),
+  ...['3er Grado','1er Año','2do Año','3er Año','4to Año','5to Año'].map(g=>D('Martes',g,["Roblegaita"],'Música')),
+  ...['3er Grado','1er Año','2do Año','3er Año','4to Año','5to Año'].map(g=>D('Miércoles',g,["Batería","Cuatro","Guitarra","Teclado"],'Música')),
+  ...['3er Grado','1er Año','2do Año','3er Año','4to Año','5to Año'].map(g=>D('Jueves',g,["Gaiteritos de Los Robles"],'Música')),
+  ...['3er Grado','1er Año','2do Año','3er Año','4to Año','5to Año'].map(g=>D('Viernes',g,["Batería","Cuatro","Bajo","Guitarra","Ensambles"],'Música')),
+].flat();
+
+// ===== Estado (sin dropdowns) =====
+let selectedDay = '';
+let selectedGrade = '';
+let selectedDisc = '';
+
+// ===== Elementos =====
+const $ = s => document.querySelector(s);
+const results = $('#results');
+const empty = $('#empty');
+const text = $('#text');
+const quick = $('#quick');
+const quickGrades = $('#quickGrades');
+const quickDays = $('#quickDays');
+
+function unique(arr){return [...new Set(arr)]}
+function sortAlphaIntl(list){return list.slice().sort((a,b)=>a.localeCompare(b,'es',{numeric:true}))}
+
+// ===== Chips =====
+const HOT = ["Fútbol campo","Baloncesto","Béisbol","Atletismo","Tenis","Ajedrez","Futsal","Robótica","Astronomía","Música","Roblegaita"];
+quick.innerHTML = HOT.map(name=>`<button class="chip" data-disc="${name}">${name}</button>`).join('');
+quick.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  const willActivate = !(b.classList.contains('active'));
+  document.querySelectorAll('#quick .chip').forEach(c=>c.classList.remove('active'));
+  selectedDisc = willActivate ? b.dataset.disc : '';
+  if(willActivate) b.classList.add('active');
+  render();
+});
+
+// Chips de grados (incluye "Todos")
+quickGrades.innerHTML = ['Todos',...GRADE_ORDER].map(g=>`<button class="chip" data-grade="${g}">${g}</button>`).join('');
+quickGrades.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  const val = b.dataset.grade;
+  const willActivate = !(b.classList.contains('active'));
+  document.querySelectorAll('#quickGrades .chip').forEach(c=>c.classList.remove('active'));
+  selectedGrade = (val==='Todos'||!willActivate) ? '' : val;
+  if(willActivate) b.classList.add('active');
+  render();
+});
+
+// Chips de días (incluye "Todos" y "Hoy")
+const todayName = getTodayName();
+const DAYS = ['Todos','Hoy',...DAY_ORDER];
+quickDays.innerHTML = DAYS.map(d=>`<button class="chip" data-day="${d}">${d}</button>`).join('');
+quickDays.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  const val = b.dataset.day;
+  const willActivate = !(b.classList.contains('active'));
+  document.querySelectorAll('#quickDays .chip').forEach(c=>c.classList.remove('active'));
+  if(val==='Hoy' && willActivate){
+    // Si hoy es Domingo (no hay clases), revertimos a Todos
+    selectedDay = DAY_ORDER.includes(todayName) ? todayName : '';
+    b.classList.add('active');
+  } else {
+    selectedDay = (val==='Todos'||!willActivate) ? '' : val;
+    if(willActivate) b.classList.add('active');
+  }
+  render();
+});
+
+// Controles
+text.addEventListener('input', render);
+
+$('#reset').addEventListener('click',()=>{
+  selectedDay = selectedGrade = selectedDisc = '';
+  text.value = '';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  // activar "Todos" por defecto en chips de grado y día
+  const gAll = document.querySelector('#quickGrades .chip[data-grade="Todos"]');
+  if(gAll) gAll.classList.add('active');
+  const dAll = document.querySelector('#quickDays .chip[data-day="Todos"]');
+  if(dAll) dAll.classList.add('active');
+  render();
+});
+
+// ===== Render (agrupado por grado) =====
+function render(){
+  const qDay = selectedDay;
+  const qGrade = selectedGrade;
+  const qDisc = selectedDisc;
+  const qText = normal(text.value);
+
+  // Filtrar
+  const filtered = DATA.filter(row=>{
+    const okDay = !qDay || row.day===qDay;
+    const okGrade = !qGrade || row.grade===qGrade;
+    const okDisc = !qDisc || row.disciplines.includes(qDisc);
+    const searchable = normal(`${row.day} ${row.grade} ${row.type} ${row.disciplines.join(' ')}`);
+    const okText = !qText || searchable.includes(qText);
+    return okDay && okGrade && okDisc && okText;
+  });
+
+  // Agrupar por grado -> por día -> set de disciplinas
+  const groups = new Map();
+  for(const row of filtered){
+    if(!groups.has(row.grade)) groups.set(row.grade, new Map());
+    const byDay = groups.get(row.grade);
+    if(!byDay.has(row.day)) byDay.set(row.day, new Set());
+    row.disciplines.forEach(d=>byDay.get(row.day).add(d));
+  }
+
+  // Render
+  results.innerHTML='';
+  const gradesSorted = Array.from(groups.keys()).sort((a,b)=>GRADE_ORDER.indexOf(a)-GRADE_ORDER.indexOf(b));
+  gradesSorted.forEach(grade=>{
+    const byDay = groups.get(grade);
+    const daysSorted = Array.from(byDay.keys()).sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
+    const card=document.createElement('article');
+    card.className='card';
+    const dayBlocks = daysSorted.map(day=>{
+      const disc = Array.from(byDay.get(day)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+      return `<div class="meta"><span class="pill">${day}</span></div>
+              <div class="list">${disc.map(d=>`<button class=\"tag\" data-d=\"${d}\">${d}</button>`).join('')}</div>`;
+    }).join('');
+    card.innerHTML = `<h3>${grade}</h3>${dayBlocks}`;
+    card.addEventListener('click',e=>{
+      const t=e.target.closest('[data-d]'); if(!t) return;
+      selectedDisc=t.dataset.d;
+      document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('active', c.dataset.disc===t.dataset.d));
+      render();
+    });
+    results.appendChild(card);
+  });
+  empty.hidden = (gradesSorted.length!==0);
+}
+
+// ===== Pruebas básicas (consola) =====
+function runTests(){
+  try{
+    const uniqueGrades = [...new Set(DATA.map(x=>x.grade))].length;
+    const cards = document.querySelectorAll('.card').length;
+    console.assert(cards === uniqueGrades, `Esperaba ${uniqueGrades} cards, hay ${cards}`);
+
+    // Chip Jueves
+    document.querySelector('#quickDays .chip[data-day="Jueves"]').click();
+    const allPillsThu = [...document.querySelectorAll('.meta .pill')].map(e=>e.textContent.trim());
+    console.assert(allPillsThu.every(v=>v==='Jueves'), 'Filtro por día (Jueves) falló');
+    document.querySelector('#quickDays .chip[data-day="Todos"]').click();
+
+    // Chip 3er Grado
+    document.querySelector('#quickGrades .chip[data-grade="3er Grado"]').click();
+    const onlyCards = document.querySelectorAll('.card');
+    console.assert(onlyCards.length===1 && /3er Grado/.test(onlyCards[0].querySelector('h3').textContent), 'Filtro por grado falló');
+    document.querySelector('#quickGrades .chip[data-grade="Todos"]').click();
+
+    // Chip Hoy (si aplica)
+    const today = getTodayName();
+    if(DAY_ORDER.includes(today)){
+      document.querySelector('#quickDays .chip[data-day="Hoy"]').click();
+      const allPillsToday = [...document.querySelectorAll('.meta .pill')].map(e=>e.textContent.trim());
+      console.assert(allPillsToday.every(v=>v===today), 'Filtro por "Hoy" falló');
+      document.querySelector('#quickDays .chip[data-day="Todos"]').click();
+    }
+
+    console.log('%cTests básicos OK','color:#12b886');
+  }catch(err){
+    console.error('Fallo en pruebas:', err);
+  }
+}
+
+// Inicio: activar "Todos" en chips de grado y día y dibujar, más autoselección de "Hoy" si es día lectivo
+(function init(){
+  const gAll = document.querySelector('#quickGrades .chip[data-grade="Todos"]');
+  const dAll = document.querySelector('#quickDays .chip[data-day="Todos"]');
+  if(gAll) gAll.classList.add('active');
+  // Si hoy es L-S, autoactivar "Hoy"; si es Domingo, dejar "Todos"
+  if(DAY_ORDER.includes(todayName)){
+    const todayBtn = document.querySelector('#quickDays .chip[data-day="Hoy"]');
+    if(todayBtn){ todayBtn.classList.add('active'); selectedDay = todayName; }
+  } else if(dAll){ dAll.classList.add('active'); }
+  render();
+  setTimeout(runTests, 0);
+})();
+</script>
+</body>
+</html>
