@@ -1,155 +1,290 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horarios · LL. RR. · 2025 - 2026</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Horarios Club Deportivo — LL. RR. 2025-2026</title>
   <style>
-    body{font-family:sans-serif;margin:0;padding:0;background:#f9f9f9}
-    header{background:#900;color:#fff;padding:1rem;text-align:center;font-weight:bold}
-    h1{margin:0;font-size:1.2rem}
-    .chips{display:flex;flex-wrap:wrap;gap:.5rem;padding:.5rem}
-    .chip{padding:.3rem .7rem;border-radius:15px;background:#eee;cursor:pointer;font-size:.9rem}
-    .chip.active{background:#900;color:#fff}
-    .card{background:#fff;margin:.5rem;padding:1rem;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
-    .grade{font-weight:bold;margin-bottom:.5rem}
-    .day{font-size:.9rem;margin:.3rem 0}
-    .disc{color:#c00;font-weight:bold;margin-left:.5rem}
-    #search{width:95%;margin:.5rem;padding:.5rem}
-    #reset{margin:.5rem;padding:.3rem .7rem;border:none;background:#900;color:#fff;border-radius:5px;cursor:pointer}
+    :root{--bg:#0b0b0c;--panel:#131317;--muted:#8f95a3;--edge:#24262e;--brand:#e91b2c}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b0b0c,#151518 42%,#101013);color:#e7e9ee}
+    .wrap{max-width:1100px;margin:auto;padding:24px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .badge{background:var(--brand);color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;letter-spacing:.3px}
+    h1{font-size:clamp(20px,2.2vw,28px);margin:0;line-height:1.2}
+    .sub{color:var(--muted);font-size:.95rem}
+
+    .panel{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:14px}
+    .filters{display:grid;grid-template-columns:1fr;gap:12px}
+    label{display:block;font-size:.8rem;color:var(--muted);margin:6px 2px}
+    input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--edge);background:#0f1014;color:#e7e9ee}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+    .chip{border:1px solid var(--edge);padding:6px 10px;border-radius:999px;font-size:.85rem;color:#d6dae3;background:#0e0f12;cursor:pointer}
+    .chip.active{background:var(--brand);border-color:transparent;color:white}
+
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+
+    .card{background:#0e0f13;border:1px solid var(--edge);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+    .card h3{margin:0;font-size:1.05rem}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;color:#c9ced8;font-size:.9rem}
+    .pill{background:#10121a;border:1px solid var(--edge);border-radius:999px;padding:4px 8px}
+    .list{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{background:var(--brand);border:1px solid var(--brand);border-radius:10px;padding:5px 8px;font-size:.85rem;color:#fff;cursor:pointer}
+    .empty{opacity:.75;text-align:center;padding:28px}
+    .hint{color:#b5bac7;font-size:.9rem;margin-top:4px}
+    .footer{margin:24px 4px;color:#9aa2b3}
+    .btn{appearance:none;border:1px solid var(--edge);background:#0f1116;color:#e7e9ee;border-radius:12px;padding:10px 12px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
   </style>
 </head>
 <body>
-  <header>
-    <div>LL. RR. · 2025 - 2026</div>
-    <h1>Horarios · Club Deportivo</h1>
-  </header>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="badge">LL. RR. · 2025 - 2026</div>
+        <div>
+          <h1>Horarios · Club Deportivo</h1>
+          <div class="sub">Usa la <strong>búsqueda</strong> o los <strong>chips</strong> de disciplina, grado/año y día.</div>
+        </div>
+      </div>
+      <button class="btn" id="reset">Reiniciar filtros</button>
+    </header>
 
-  <input type="text" id="search" placeholder="Buscar…">
-  <button id="reset">Reiniciar filtros</button>
+    <section class="panel">
+      <div class="filters">
+        <div>
+          <label for="text">Búsqueda rápida</label>
+          <input id="text" placeholder="Escribe: ajedrez, 3er, futsal…"/>
+        </div>
+      </div>
+      <div class="chips" id="quick"></div>
+      <div class="chips" id="quickGrades"></div>
+      <div class="chips" id="quickDays"></div>
+    </section>
 
-  <div class="chips" id="discipline-chips"></div>
-  <div class="chips" id="grade-chips"></div>
-  <div class="chips" id="day-chips"></div>
+    <section id="results" class="grid" aria-live="polite"></section>
+    <div id="empty" class="empty" hidden>Sin coincidencias con los filtros actuales.</div>
 
-  <div id="results"></div>
+    <div class="footer">
+      <div class="hint">Sugerencia: haz clic en una disciplina, un grado o un día para filtrar al instante.</div>
+    </div>
+  </div>
 
 <script>
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/13YowVOIm6LWjbFuK1FiY9zyXbXzkKXZLmgcta-TDnkg/export?format=csv";
-let DATA = [];
-let filters = { discipline:"Todos", grade:"Todos", day:"Todos", search:"" };
+// ===== Utiles =====
+const normal = s => s.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\\s+/g,' ').trim();
+const DAY_ORDER = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const GRADE_ORDER = ["1er Grado","2do Grado","3er Grado","4to Grado","5to Grado","6to Grado","1er Año","2do Año","3er Año","4to Año","5to Año"];
+function getTodayName(){ const dias=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]; return dias[new Date().getDay()]; }
 
-const DAYS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-const GRADES = ["1er Grado","2do Grado","3er Grado","4to Grado","5to Grado","6to Grado",
-                "1er Año","2do Año","3er Año","4to Año","5to Año"];
-function uniq(arr){return [...new Set(arr)].sort();}
+// ===== Carga dinámica desde Google Sheets (NO cambia el diseño) =====
+const SHEET_ID = "13YowVOIm6LWjbFuK1FiY9zyXbXzkKXZLmgcta-TDnkg";   // tu ID
+const SHEET_NAME = "Datos";                                       // nombre de pestaña
+let DATA = [];                                                    // se pobla desde la hoja
 
 function parseCSV(text){
-  const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  const header=lines.shift().split(",");
-  return lines.map(l=>{
-    const parts=l.split(",");
-    return {
-      day:parts[0].trim(),
-      grade:parts[1].trim(),
-      discipline:parts[2].trim(),
-      time:parts[3]?parts[3].trim():"",
-      type:parts[4]?parts[4].trim():""
-    };
-  });
+  const rows=[]; let cur=[], cell="", inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(inQ){
+      if(c=='"' && n=='"'){ cell+='"'; i++; continue; }
+      if(c=='"'){ inQ=false; continue; }
+      cell+=c;
+    } else {
+      if(c=='"'){ inQ=true; continue; }
+      if(c==','){ cur.push(cell); cell=""; continue; }
+      if(c=='\\n'){ cur.push(cell); rows.push(cur); cur=[]; cell=""; continue; }
+      if(c=='\\r'){ continue; }
+      cell+=c;
+    }
+  }
+  if(cell.length || cur.length){ cur.push(cell); rows.push(cur); }
+  return rows;
+}
+const normalizeHeader = h => h.toLowerCase().trim();
+
+async function loadFromSheet(){
+  const urls = [
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`,
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`,
+  ];
+  for(const url of urls){
+    try{
+      const res = await fetch(url, {cache:'no-store'});
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      if(/<\\/?html/i.test(text)) throw new Error('No CSV (revisa permisos de compartir)');
+      const rows = parseCSV(text);
+      const header = rows.shift().map(normalizeHeader);
+      const idx = n => header.indexOf(n);
+      const di=idx('day'), gi=idx('grade'), ci=idx('discipline'), hi=idx('time'), ti=idx('type');
+      if(di<0||gi<0||ci<0) throw new Error('Faltan columnas: day, grade, discipline');
+
+      DATA = rows
+        .filter(r=>r && r.length)
+        .map(r=>({
+          day:(r[di]||'').trim(),
+          grade:(r[gi]||'').trim(),
+          disciplines: ((r[ci]||'').includes('|') ? (r[ci]||'').split('|') : (r[ci]||'').split(';'))
+                        .map(s=>s.trim()).filter(Boolean),
+          time:(r[hi]||'').trim(),
+          type:(r[ti]||'Deportes').trim()
+        }))
+        .filter(x=>x.day && x.grade && x.disciplines.length);
+
+      render();
+      console.log('Datos cargados desde Google Sheets:', DATA.length);
+      return;
+    }catch(err){ console.warn('Intento fallido con', url, err); }
+  }
+  alert('No se pudo cargar la hoja. Verifica “Cualquier persona con el vínculo (lector)” y el nombre de la pestaña (\"Datos\").');
 }
 
-async function load(){
-  try{
-    const res=await fetch(SHEET_CSV_URL);
-    const txt=await res.text();
-    DATA=parseCSV(txt);
-    buildChips();
-    setTodayChip();
-    render();
-  }catch(e){console.error(e);}
-}
+// ===== Estado (chips) =====
+let selectedDay = '';
+let selectedGrade = '';
+let selectedDisc = '';
 
-function buildChips(){
-  const disc=uniq(DATA.map(d=>d.discipline));
-  const dc=document.getElementById("discipline-chips");
-  dc.innerHTML="";
-  ["Todos",...disc].forEach(x=>{
-    const c=document.createElement("div");
-    c.textContent=x;c.className="chip"+(x==="Todos"?" active":"");
-    c.onclick=()=>{filters.discipline=x;setActive(dc,x);render();};
-    dc.appendChild(c);
-  });
-  const gc=document.getElementById("grade-chips");
-  gc.innerHTML="";
-  ["Todos",...GRADES].forEach(x=>{
-    const c=document.createElement("div");
-    c.textContent=x;c.className="chip"+(x==="Todos"?" active":"");
-    c.onclick=()=>{filters.grade=x;setActive(gc,x);render();};
-    gc.appendChild(c);
-  });
-  const dch=document.getElementById("day-chips");
-  dch.innerHTML="";
-  ["Todos","Hoy",...DAYS].forEach(x=>{
-    const c=document.createElement("div");
-    c.textContent=x;c.className="chip"+(x==="Todos"?" active":"");
-    c.onclick=()=>{filters.day=x==="Hoy"?todayName():x;setActive(dch,x);render();};
-    dch.appendChild(c);
-  });
-}
-function setActive(container,val){
-  [...container.children].forEach(c=>c.classList.remove("active"));
-  [...container.children].find(c=>c.textContent===val || (val===todayName() && c.textContent==="Hoy"))?.classList.add("active");
-}
-function todayName(){
-  const n=(new Date()).getDay();
-  return ["Domingo",...DAYS][n]||"";
-}
-function setTodayChip(){
-  const d=todayName();
-  if(DAYS.includes(d)){filters.day=d;setActive(document.getElementById("day-chips"),"Hoy");}
-}
+// ===== Elementos =====
+const $ = s => document.querySelector(s);
+const results = $('#results');
+const empty = $('#empty');
+const text = $('#text');
+const quick = $('#quick');
+const quickGrades = $('#quickGrades');
+const quickDays = $('#quickDays');
+
+function unique(arr){return [...new Set(arr)]}
+
+// ===== Chips =====
+const HOT = ["Fútbol campo","Baloncesto","Béisbol","Atletismo","Tenis","Ajedrez","Futsal","Robótica","Astronomía","Música","Roblegaita"];
+quick.innerHTML = HOT.map(name=>`<button class="chip" data-disc="${name}">${name}</button>`).join('');
+quick.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  const willActivate = !(b.classList.contains('active'));
+  document.querySelectorAll('#quick .chip').forEach(c=>c.classList.remove('active'));
+  selectedDisc = willActivate ? b.dataset.disc : '';
+  if(willActivate) b.classList.add('active');
+  render();
+});
+
+// Chips de grados (incluye "Todos")
+quickGrades.innerHTML = ['Todos',...GRADE_ORDER].map(g=>`<button class="chip" data-grade="${g}">${g}</button>`).join('');
+quickGrades.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  const val = b.dataset.grade;
+  const willActivate = !(b.classList.contains('active'));
+  document.querySelectorAll('#quickGrades .chip').forEach(c=>c.classList.remove('active'));
+  selectedGrade = (val==='Todos'||!willActivate) ? '' : val;
+  if(willActivate) b.classList.add('active');
+  render();
+});
+
+// Chips de días (incluye "Todos" y "Hoy")
+const todayName = getTodayName();
+const DAYS = ['Todos','Hoy',...DAY_ORDER];
+quickDays.innerHTML = DAYS.map(d=>`<button class="chip" data-day="${d}">${d}</button>`).join('');
+quickDays.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  const val = b.dataset.day;
+  const willActivate = !(b.classList.contains('active'));
+  document.querySelectorAll('#quickDays .chip').forEach(c=>c.classList.remove('active'));
+  if(val==='Hoy' && willActivate){
+    selectedDay = DAY_ORDER.includes(todayName) ? todayName : '';
+    b.classList.add('active');
+  } else {
+    selectedDay = (val==='Todos'||!willActivate) ? '' : val;
+    if(willActivate) b.classList.add('active');
+  }
+  render();
+});
+
+// Controles
+text.addEventListener('input', render);
+$('#reset').addEventListener('click',()=>{
+  selectedDay = selectedGrade = selectedDisc = '';
+  text.value = '';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  const gAll = document.querySelector('#quickGrades .chip[data-grade="Todos"]'); if(gAll) gAll.classList.add('active');
+  const dAll = document.querySelector('#quickDays .chip[data-day="Todos"]'); if(dAll) dAll.classList.add('active');
+  render();
+});
+
+// ===== Render (agrupado por grado) =====
 function render(){
-  const out=document.getElementById("results");
-  out.innerHTML="";
-  let data=DATA;
-  if(filters.discipline!=="Todos") data=data.filter(r=>r.discipline===filters.discipline);
-  if(filters.grade!=="Todos") data=data.filter(r=>r.grade===filters.grade);
-  if(filters.day!=="Todos") data=data.filter(r=>r.day===filters.day);
-  if(filters.search) data=data.filter(r=>(r.grade+" "+r.discipline+" "+r.day).toLowerCase().includes(filters.search.toLowerCase()));
-  const grouped={};
-  data.forEach(r=>{
-    if(!grouped[r.grade]) grouped[r.grade]={};
-    if(!grouped[r.grade][r.day]) grouped[r.grade][r.day]=[];
-    grouped[r.grade][r.day].push(r.discipline+(r.time?` (${r.time})`:""));
+  const qDay = selectedDay, qGrade = selectedGrade, qDisc = selectedDisc, qText = normal(text.value);
+
+  const filtered = DATA.filter(row=>{
+    const okDay = !qDay || row.day===qDay;
+    const okGrade = !qGrade || row.grade===qGrade;
+    const okDisc = !qDisc || row.disciplines.includes(qDisc);
+    const searchable = normal(`${row.day} ${row.grade} ${row.type||''} ${row.disciplines.join(' ')}`);
+    const okText = !qText || searchable.includes(qText);
+    return okDay && okGrade && okDisc && okText;
   });
-  GRADES.forEach(g=>{
-    if(!grouped[g]) return;
-    const card=document.createElement("div");
-    card.className="card";
-    card.innerHTML=`<div class="grade">${g}</div>`;
-    DAYS.forEach(d=>{
-      if(grouped[g][d]){
-        const line=document.createElement("div");
-        line.className="day";
-        line.textContent=d+": ";
-        grouped[g][d].forEach(di=>{
-          const span=document.createElement("span");
-          span.className="disc";
-          span.textContent=di;
-          line.appendChild(span);
-        });
-        card.appendChild(line);
-      }
+
+  const groups = new Map();
+  for(const row of filtered){
+    if(!groups.has(row.grade)) groups.set(row.grade, new Map());
+    const byDay = groups.get(row.grade);
+    if(!byDay.has(row.day)) byDay.set(row.day, new Set());
+    row.disciplines.forEach(d=>byDay.get(row.day).add(d));
+  }
+
+  results.innerHTML='';
+  const gradesSorted = Array.from(groups.keys()).sort((a,b)=>GRADE_ORDER.indexOf(a)-GRADE_ORDER.indexOf(b));
+  gradesSorted.forEach(grade=>{
+    const byDay = groups.get(grade);
+    const daysSorted = Array.from(byDay.keys()).sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
+    const card=document.createElement('article');
+    card.className='card';
+    const dayBlocks = daysSorted.map(day=>{
+      const disc = Array.from(byDay.get(day)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+      return `<div class="meta"><span class="pill">${day}</span></div>
+              <div class="list">${disc.map(d=>`<button class="tag" data-d="${d}">${d}</button>`).join('')}</div>`;
+    }).join('');
+    card.innerHTML = `<h3>${grade}</h3>${dayBlocks}`;
+    card.addEventListener('click',e=>{
+      const t=e.target.closest('[data-d]'); if(!t) return;
+      selectedDisc=t.dataset.d;
+      document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('active', c.dataset.disc===t.dataset.d));
+      render();
     });
-    out.appendChild(card);
+    results.appendChild(card);
   });
+  empty.hidden = (gradesSorted.length!==0);
 }
 
-document.getElementById("search").oninput=e=>{filters.search=e.target.value;render();};
-document.getElementById("reset").onclick=()=>{filters={discipline:"Todos",grade:"Todos",day:"Todos",search:""};buildChips();render();};
+// ===== Pruebas básicas (consola) =====
+function runTests(){
+  try{
+    if(DATA.length){
+      const uniqueGrades = [...new Set(DATA.map(x=>x.grade))].length;
+      const cards = document.querySelectorAll('.card').length;
+      console.assert(cards === uniqueGrades, `Esperaba ${uniqueGrades} cards, hay ${cards}`);
+    }
+    console.log('%cTests básicos OK','color:#12b886');
+  }catch(err){ console.error('Fallo en pruebas:', err); }
+}
 
-load();
+// Inicio
+(function init(){
+  const gAll = document.querySelector('#quickGrades .chip[data-grade="Todos"]');
+  const dAll = document.querySelector('#quickDays .chip[data-day="Todos"]');
+  if(gAll) gAll.classList.add('active');
+  const tn = getTodayName();
+  if(DAY_ORDER.includes(tn)){
+    const todayBtn = document.querySelector('#quickDays .chip[data-day="Hoy"]');
+    if(todayBtn){ todayBtn.classList.add('active'); selectedDay = tn; }
+  } else if(dAll){ dAll.classList.add('active'); }
+  render();
+  loadFromSheet();
+  setTimeout(runTests, 400);
+})();
 </script>
 </body>
 </html>
