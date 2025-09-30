@@ -156,7 +156,7 @@ const quickGrades = $('#quickGrades');
 const quickDays = $('#quickDays');
 
 /* ===== Chips ===== */
-const HOT = ["Fútbol campo","Baloncesto","Béisbol","Atletismo","Tenis","Ajedrez","Futsal","Robótica","Astronomía","Música","Roblegaita"];
+const HOT = ["Ajedrez","Astronomía","Atletismo","Baloncesto","Béisbol","Futsal","Fútbol campo","Música","Roblegaita","Robótica","Tenis"];
 quick.innerHTML = HOT.map(name=>`<button class="chip" data-disc="${name}">${name}</button>`).join('');
 quick.addEventListener('click', e=>{
   const b = e.target.closest('.chip'); if(!b) return;
