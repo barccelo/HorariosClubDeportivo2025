@@ -15,7 +15,6 @@
     .badge{background:var(--brand);color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;letter-spacing:.3px}
     h1{font-size:clamp(20px,2.2vw,28px);margin:0;line-height:1.2}
     .sub{color:var(--muted);font-size:.95rem}
-
     .panel{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:14px}
     .filters{display:grid;grid-template-columns:1fr;gap:12px}
     label{display:block;font-size:.8rem;color:var(--muted);margin:6px 2px}
@@ -23,11 +22,9 @@
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
     .chip{border:1px solid var(--edge);padding:6px 10px;border-radius:999px;font-size:.85rem;color:#d6dae3;background:#0e0f12;cursor:pointer}
     .chip.active{background:var(--brand);border-color:transparent;color:white}
-
     .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
     @media (max-width:980px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:640px){.grid{grid-template-columns:1fr}}
-
     .card{background:#0e0f13;border:1px solid var(--edge);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
     .card h3{margin:0;font-size:1.05rem}
     .meta{display:flex;gap:8px;flex-wrap:wrap;color:#c9ced8;font-size:.9rem}
@@ -75,16 +72,16 @@
   </div>
 
 <script>
-// ===== Utiles =====
-const normal = s => s.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\\s+/g,' ').trim();
+/* ===== Utiles ===== */
+const normal = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const DAY_ORDER = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const GRADE_ORDER = ["1er Grado","2do Grado","3er Grado","4to Grado","5to Grado","6to Grado","1er Año","2do Año","3er Año","4to Año","5to Año"];
 function getTodayName(){ const dias=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]; return dias[new Date().getDay()]; }
 
-// ===== Carga dinámica desde Google Sheets (NO cambia el diseño) =====
-const SHEET_ID = "13YowVOIm6LWjbFuK1FiY9zyXbXzkKXZLmgcta-TDnkg";   // tu ID
-const SHEET_NAME = "Datos";                                       // nombre de pestaña
-let DATA = [];                                                    // se pobla desde la hoja
+/* ===== Carga dinámica desde Google Sheets (sin cambiar diseño) ===== */
+const SHEET_ID = "13YowVOIm6LWjbFuK1FiY9zyXbXzkKXZLmgcta-TDnkg";
+const SHEET_NAME = "HorariosDelClubDeportivo2025";
+let DATA = []; // se pobla desde Sheets
 
 function parseCSV(text){
   const rows=[]; let cur=[], cell="", inQ=false;
@@ -97,8 +94,8 @@ function parseCSV(text){
     } else {
       if(c=='"'){ inQ=true; continue; }
       if(c==','){ cur.push(cell); cell=""; continue; }
-      if(c=='\\n'){ cur.push(cell); rows.push(cur); cur=[]; cell=""; continue; }
-      if(c=='\\r'){ continue; }
+      if(c=='\n'){ cur.push(cell); rows.push(cur); cur=[]; cell=""; continue; }
+      if(c=='\r'){ continue; }
       cell+=c;
     }
   }
@@ -117,7 +114,7 @@ async function loadFromSheet(){
       const res = await fetch(url, {cache:'no-store'});
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
-      if(/<\\/?html/i.test(text)) throw new Error('No CSV (revisa permisos de compartir)');
+      if(/<\/*html/i.test(text)) throw new Error('No CSV (revisa permisos públicos)');
       const rows = parseCSV(text);
       const header = rows.shift().map(normalizeHeader);
       const idx = n => header.indexOf(n);
@@ -141,15 +138,15 @@ async function loadFromSheet(){
       return;
     }catch(err){ console.warn('Intento fallido con', url, err); }
   }
-  alert('No se pudo cargar la hoja. Verifica “Cualquier persona con el vínculo (lector)” y el nombre de la pestaña (\"Datos\").');
+  alert('No se pudo cargar la hoja. Verifica “Cualquier persona con el vínculo (lector)” y el nombre de la pestaña.');
 }
 
-// ===== Estado (chips) =====
+/* ===== Estado (chips) ===== */
 let selectedDay = '';
 let selectedGrade = '';
 let selectedDisc = '';
 
-// ===== Elementos =====
+/* ===== Elementos ===== */
 const $ = s => document.querySelector(s);
 const results = $('#results');
 const empty = $('#empty');
@@ -158,9 +155,7 @@ const quick = $('#quick');
 const quickGrades = $('#quickGrades');
 const quickDays = $('#quickDays');
 
-function unique(arr){return [...new Set(arr)]}
-
-// ===== Chips =====
+/* ===== Chips ===== */
 const HOT = ["Fútbol campo","Baloncesto","Béisbol","Atletismo","Tenis","Ajedrez","Futsal","Robótica","Astronomía","Música","Roblegaita"];
 quick.innerHTML = HOT.map(name=>`<button class="chip" data-disc="${name}">${name}</button>`).join('');
 quick.addEventListener('click', e=>{
@@ -172,7 +167,7 @@ quick.addEventListener('click', e=>{
   render();
 });
 
-// Chips de grados (incluye "Todos")
+// Grados (incluye "Todos")
 quickGrades.innerHTML = ['Todos',...GRADE_ORDER].map(g=>`<button class="chip" data-grade="${g}">${g}</button>`).join('');
 quickGrades.addEventListener('click', e=>{
   const b = e.target.closest('.chip'); if(!b) return;
@@ -184,7 +179,7 @@ quickGrades.addEventListener('click', e=>{
   render();
 });
 
-// Chips de días (incluye "Todos" y "Hoy")
+// Días (incluye "Todos" y "Hoy")
 const todayName = getTodayName();
 const DAYS = ['Todos','Hoy',...DAY_ORDER];
 quickDays.innerHTML = DAYS.map(d=>`<button class="chip" data-day="${d}">${d}</button>`).join('');
@@ -203,8 +198,10 @@ quickDays.addEventListener('click', e=>{
   render();
 });
 
-// Controles
+// Búsqueda rápida
 text.addEventListener('input', render);
+
+// Reinicio
 $('#reset').addEventListener('click',()=>{
   selectedDay = selectedGrade = selectedDisc = '';
   text.value = '';
@@ -214,19 +211,20 @@ $('#reset').addEventListener('click',()=>{
   render();
 });
 
-// ===== Render (agrupado por grado) =====
+/* ===== Render (agrupado por grado) ===== */
 function render(){
-  const qDay = selectedDay, qGrade = selectedGrade, qDisc = selectedDisc, qText = normal(text.value);
+  const qDay=selectedDay, qGrade=selectedGrade, qDisc=selectedDisc, qText=normal(text.value);
 
   const filtered = DATA.filter(row=>{
-    const okDay = !qDay || row.day===qDay;
+    const okDay   = !qDay   || row.day===qDay;
     const okGrade = !qGrade || row.grade===qGrade;
-    const okDisc = !qDisc || row.disciplines.includes(qDisc);
+    const okDisc  = !qDisc  || row.disciplines.includes(qDisc);
     const searchable = normal(`${row.day} ${row.grade} ${row.type||''} ${row.disciplines.join(' ')}`);
     const okText = !qText || searchable.includes(qText);
     return okDay && okGrade && okDisc && okText;
   });
 
+  // Agrupar por grado -> por día -> set de disciplinas
   const groups = new Map();
   for(const row of filtered){
     if(!groups.has(row.grade)) groups.set(row.grade, new Map());
@@ -235,6 +233,7 @@ function render(){
     row.disciplines.forEach(d=>byDay.get(row.day).add(d));
   }
 
+  // Render
   results.innerHTML='';
   const gradesSorted = Array.from(groups.keys()).sort((a,b)=>GRADE_ORDER.indexOf(a)-GRADE_ORDER.indexOf(b));
   gradesSorted.forEach(grade=>{
@@ -259,19 +258,7 @@ function render(){
   empty.hidden = (gradesSorted.length!==0);
 }
 
-// ===== Pruebas básicas (consola) =====
-function runTests(){
-  try{
-    if(DATA.length){
-      const uniqueGrades = [...new Set(DATA.map(x=>x.grade))].length;
-      const cards = document.querySelectorAll('.card').length;
-      console.assert(cards === uniqueGrades, `Esperaba ${uniqueGrades} cards, hay ${cards}`);
-    }
-    console.log('%cTests básicos OK','color:#12b886');
-  }catch(err){ console.error('Fallo en pruebas:', err); }
-}
-
-// Inicio
+/* ===== Inicio ===== */
 (function init(){
   const gAll = document.querySelector('#quickGrades .chip[data-grade="Todos"]');
   const dAll = document.querySelector('#quickDays .chip[data-day="Todos"]');
@@ -282,8 +269,7 @@ function runTests(){
     if(todayBtn){ todayBtn.classList.add('active'); selectedDay = tn; }
   } else if(dAll){ dAll.classList.add('active'); }
   render();
-  loadFromSheet();
-  setTimeout(runTests, 400);
+  loadFromSheet(); // << carga la hoja
 })();
 </script>
 </body>
